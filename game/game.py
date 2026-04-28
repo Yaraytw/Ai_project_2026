@@ -36,7 +36,7 @@ class GameState:
         self.uv_points = 0
         self.ab_time = 0
         self.uv_time = 0
-        self.time_extends = {"AB": 0, "UV": 0}  # 剩餘延長次數
+        self.time_extends = {"AB": 3, "UV": 3}  # 剩餘延長次數
         self.slow_responses = {"AB": 0, "UV": 0}  # 超過 60 秒的次數
         self.moves_history = []  # 移動歷史
         self.initial_move_done = False  # 是否已完成 UV 初始異動
@@ -53,9 +53,6 @@ class GameState:
         if initial_move:
             src, dst = initial_move
             self.apply_move(src, dst, 0, is_initial=True)
-            self.initial_move_done = True
-            self.round_num = 0
-            self.current_side = "AB"  # AB 方先手
     
     def apply_move(self, src, dst, elapsed, is_initial=False):
         """
@@ -131,13 +128,20 @@ class GameState:
         move_record = MoveRecord(src, dst, piece, captured_piece, points, elapsed)
         self.moves_history.append(move_record)
         
-        # 更新遊戲狀態
-        if not is_initial:
-            self.round_num += 1
+        # 更新遊戲狀態與換手防呆
+        if is_initial:
+            self.initial_move_done = True
+            self.round_num = 1
+            self.current_side = "AB"  # 確保初始異動完，狀態機強制換 AB 先手
+        else:
+            # 只有當 UV (後手) 走完時，才算完整的一回合結束
+            if self.current_side == "UV":
+                self.round_num += 1
+                
             self.current_side = "UV" if self.current_side == "AB" else "AB"
             
             # 檢查是否達到最大回合數
-            if self.round_num >= self.MAX_ROUNDS:
+            if self.round_num > self.MAX_ROUNDS:
                 self.game_ended = True
         
         return move_record

@@ -2,6 +2,7 @@
 棋盤底層操作模組
 管理 8x8 棋盤状態、棋子位置、捕獲等
 """
+import os
 
 class Board:
     """棋盤管理類別"""
@@ -9,11 +10,37 @@ class Board:
     BOARD_SIZE = 8
     EMPTY = "+"
     
-    def __init__(self):
+    def __init__(self, filepath="board.txt"):
         """初始化棋盤"""
         self.grid = [[self.EMPTY for _ in range(self.BOARD_SIZE)] for _ in range(self.BOARD_SIZE)]
-        self._init_pieces()
-    
+        
+        # 自動偵測：如果有 board.txt 就讀取自訂盤面，沒有就用預設開局
+        if os.path.exists(filepath):
+            self._load_from_file(filepath)
+        else:
+            self._init_pieces()
+            
+    def _load_from_file(self, filepath):
+        """從文字檔讀取初始盤面"""
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                # 讀取非空白行，並過濾掉空格，方便玩家在 txt 中用空格排版對齊
+                lines = [line.strip().replace(" ", "").replace("\t", "") for line in f if line.strip()]
+            
+            for r in range(min(self.BOARD_SIZE, len(lines))):
+                row_str = lines[r]
+                for c in range(min(self.BOARD_SIZE, len(row_str))):
+                    char = row_str[c]
+                    # 確保只讀取合法的棋子代號或空白
+                    if char in "ABcdefUVwxyz+":
+                        self.grid[r][c] = char
+                        
+            print(f"✅ 成功從 {filepath} 讀取自訂初始盤面！")
+        except Exception as e:
+            print(f"⚠️ 讀取盤面檔案失敗: {e}，將使用預設開局。")
+            self.grid = [[self.EMPTY for _ in range(self.BOARD_SIZE)] for _ in range(self.BOARD_SIZE)]
+            self._init_pieces()
+
     def _init_pieces(self):
         """設置初始棋子位置"""
         # AB 方（上方）

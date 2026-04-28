@@ -38,7 +38,7 @@ def get_initial_move_uv(player, state):
     只有 UV 方需要進行初始異動（在遊戲開始前）
     """
     print("\n" + "="*50)
-    print("初始異動：UV 方選擇任意一子進行移動")
+    print("初始異動：UV 方可選擇棋盤上『不分敵我』之任一子換到某個空格")
     print("="*50)
     
     while True:
@@ -47,12 +47,11 @@ def get_initial_move_uv(player, state):
             src, dst = move
             piece = state.board.get_piece(src[0], src[1])
             
-            # 檢查是否為 UV 方的棋子
-            from game.piece import Piece
-            if Piece.get_side(piece) == "UV":
+            # 簡報規定：不分敵我之任一子皆可移動，只要不是空格即可
+            if piece != "+":
                 return move
             else:
-                print("必須移動 UV 方的棋子")
+                print("來源位置必須有棋子")
         else:
             print("移動失敗，請重試")
 
@@ -85,13 +84,14 @@ def play_game(ab_player, uv_player, is_initial_move_required=True, depth=3):
     if is_initial_move_required:
         initial_move = get_initial_move_uv(uv_player, state)
         src, dst = initial_move
+        piece = state.board.get_piece(src[0], src[1]) # 取得被異動的棋子名稱
+        
         state.apply_move(src, dst, 0, is_initial=True)
         
-        print(f"\nUV 方初始異動: ({src[0]},{src[1]}) → ({dst[0]},{dst[1]})")
+        # 配合簡報格式，例如 B:(3,5)-(2,4)
+        print(f"\nUV 方初始異動: {piece}:({src[0]},{src[1]})-({dst[0]},{dst[1]})")
         Display.display_board(state.board)
-        state.initial_move_done = True
-        state.round_num = 0
-        state.current_side = "AB"
+        # 注意：game.py 中的 apply_move 已經會自動處理換手與回合數初始化
     
     # 主遊戲迴圈
     move_count = 0
@@ -135,8 +135,8 @@ def play_game(ab_player, uv_player, is_initial_move_required=True, depth=3):
         
         move_count += 1
         
-        # 顯示移動資訊
-        print(f"({src[0]},{src[1]}) → ({dst[0]},{dst[1]})", end="")
+        # 顯示移動資訊，精準配合簡報要求的輸出格式
+        print(f"{piece}:({src[0]},{src[1]})-({dst[0]},{dst[1]})", end="")
         if captured != "+":
             print(f" 吃掉 {captured} 得 {points_gained} 分", end="")
         print(f" | 本手耗時: {elapsed:.2f}s", end="")
@@ -156,7 +156,7 @@ def play_game(ab_player, uv_player, is_initial_move_required=True, depth=3):
     
     Display.display_game_over(winner, reason)
     
-    print(f"總移動數: {move_count}")
+    print(f"總回合數: {state.round_num}")
     print(f"AB 方: 得分={state.ab_points} 耗時={state.ab_time:.2f}s")
     print(f"UV 方: 得分={state.uv_points} 耗時={state.uv_time:.2f}s")
     
